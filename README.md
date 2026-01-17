@@ -239,11 +239,11 @@ rules = [
 **Action formats:**
 
 Actions support three formats:
-
+NOTE: dict is default, everything is normalized to "dict" internally
 ```python
 "actions": [
-    {"action": "put_on_sale", "params": {"percent": 25}},  # dict
-    ["order_more", {"quantity": 10}],                       # list
+    {"action": "put_on_sale", "params": {"percent": 25}},   # dict - default
+    ["order_more", {"quantity": 10}],                       # list, or tuple
     "notify_manager"                                        # string (no params)
 ]
 ```
