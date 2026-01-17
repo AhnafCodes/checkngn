@@ -2,7 +2,7 @@
 
 A lightweight Python DSL for setting up business intelligence rules that can be configured without code.
 
-(NOTE Disclaimer: Fork of Venmo-Business-Rules and CDICS-business-rules-enhanced, with simple updates like project setup and logging)
+(NOTE Disclaimer: Fork of Venmo-Business-Rules and CDICS-business-rules-enhanced, with simple updates like project setup and logging. But, not a drop-in replacement for the original)
 
 [![CI](https://github.com/AhnafCodes/checkngn/actions/workflows/automatic-test.yml/badge.svg)](https://github.com/AhnafCodes/checkngn/actions/workflows/automatic-test.yml)
 
@@ -169,7 +169,9 @@ class ProductActions(BaseActions):
 ### 3. Build Rules
 
 Rules are JSON/dict structures with `conditions` and `actions`:
-
+NOTE: JSON structures uses different terminology from venmo's business-rules i.e.
+     - generic "name" in conditions is replaced with "field".
+     - generic "name" in actions is replace with "action" as it is self-documenting. 
 ```python
 rules = [
     # expiration_days < 5 AND current_inventory > 20
@@ -281,7 +283,7 @@ for product in products:
   - [CDIS Business Rules -Fork Venmo original](https://github.com/cdisc-org/business-rules) i.e. pre-cursor of this repo
   - [Funnel Rules Engine](https://github.com/funnel-io/funnel-rules-engine) : A code-driven engine designed for developers. Rules are defined as Python objects/functions.
 It is ideal for simple, maintainable logic within a codebase without the overhead of parsing JSON or managing external rule definitions. Choose funnel-rules-engine if you need to refactor complex conditional logic (spaghetti code) into a clean, testable structure within your application, and the rules are part of the application logic itself.
-Related Conference Talk by its creator: [Rules Rule (Creating and Using a Rules Engine)](https://youtu.be/Lsi1ZhmbNDc?t=87) 
+Related Conference Talk by its creator: [Rules Rule(Creating and Using a Rules Engine)](https://youtu.be/Lsi1ZhmbNDc?t=87) 
 
 
 ## Documentation
