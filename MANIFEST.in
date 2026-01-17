@@ -1,1 +1,1 @@
-include HISTORY.rst LICENSE README.md
+include LICENSE README.md pyproject.toml
