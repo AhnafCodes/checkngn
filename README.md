@@ -291,7 +291,7 @@ uv run pytest
 
 ## Documentation
 
-See [INTERNALS.md](INTERNALS.md) for detailed architecture documentation.
+See [INTERNALS.md](https://github.com/AhnafCodes/checkngn/blob/master/INTERNALS.md) for detailed architecture documentation.
 
 ## License
 
