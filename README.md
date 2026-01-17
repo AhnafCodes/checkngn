@@ -1,6 +1,7 @@
 # checkngn
 
 A lightweight Python DSL for setting up business intelligence rules that can be configured without code.
+
 (NOTE Disclaimer: Fork of Venmo-Business-Rules and CDICS-business-rules-enhanced, with simple updates like project setup and logging)
 
 [![CI](https://github.com/AhnafCodes/business-rules/actions/workflows/automatic-test.yml/badge.svg)](https://github.com/AhnafCodes/business-rules/actions/workflows/automatic-test.yml)
