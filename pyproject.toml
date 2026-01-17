@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "checkngn"
+version = "1.0.0"
+description = "Fork of Venmo-Business-Rules and CDICS-business-rules-enhanced Python DSL for setting up business intelligence rules that can be configured without code"
+readme = "README.md"
+requires-python = ">=3.14"
+license = "MIT"
+authors = [
+    {name = "cdisc-org"}
+]
+urls = {Homepage = "https://github.com/cdisc-org/business-rules"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "pandas>=2.3.3",
+    "numpy>=2.4.0",
+    "python-dateutil"
+]
+
+[project.optional-dependencies]
+dev = [
+    "mock>=5.0.0",
+    "pytest>=8.0.0",
+    "pandas>=2.3.3"
+]
+
+[tool.setuptools.packages.find]
+include = ["checkngn*"]
+
+[tool.pytest.ini_options]
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
