@@ -1,4 +1,4 @@
-# checkngn
+# checkngn (venmo-business-rules style)
 
 A lightweight Python DSL for setting up business intelligence rules that can be configured without code.
 
@@ -275,19 +275,14 @@ for product in products:
 | `@select_multiple_rule_variable()` | list | `contains_all`, `is_contained_by`, `shares_at_least_one_element_with`, `shares_exactly_one_element_with`, `shares_no_elements_with` |
 | `@dataframe_rule_variable()` | pd.DataFrame/Series | `exists`, `not_exists` |
 
-## Contributing
 
-```bash
-# Clone the repo
-git clone https://github.com/AhnafCodes/checkngn.git
-cd checkngn
 
-# Install dev dependencies
-uv pip install -e ".[dev]"
+## Alterntives
+  - [CDIS Business Rules -Fork Venmo original](https://github.com/cdisc-org/business-rules) i.e. pre-cursor of this repo
+  - [Funnel Rules Engine](https://github.com/funnel-io/funnel-rules-engine) : A code-driven engine designed for developers. Rules are defined as Python objects/functions.
+It is ideal for simple, maintainable logic within a codebase without the overhead of parsing JSON or managing external rule definitions. Choose funnel-rules-engine if you need to refactor complex conditional logic (spaghetti code) into a clean, testable structure within your application, and the rules are part of the application logic itself.
+Related Conference Talk by its creator: [Rules Rule (Creating and Using a Rules Engine)](https://youtu.be/Lsi1ZhmbNDc?t=87) 
 
-# Run tests
-uv run pytest
-```
 
 ## Documentation
 
