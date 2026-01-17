@@ -8,7 +8,7 @@ A lightweight Python DSL for setting up business intelligence rules that can be 
 
 ## Overview
 
-As a software system grows in complexity and usage, it can become burdensome if every change to the logic/behavior of the system also requires you to write and deploy new code. **checkngn** provides a simple interface allowing anyone to capture new rules and logic defining the behavior of a system, and a way to then process those rules on the backend.
+At its core any Rule Engine is "IF condition, THEN do action", but it is also MORE.. . As any system grows in complexity and usage, it can become burdensome if every change to the logic/behavior of the system also requires code change and deploy new code. **checkngn** provides a simple interface allowing anyone to capture new rules and logic defining the behavior of a system, and a way to then process those rules on the backend.
 
 Use cases:
 - Marketing logic for customer/item discount eligibility
