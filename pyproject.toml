@@ -12,7 +12,7 @@ license = "MIT"
 authors = [
     {name = "cdisc-org"}
 ]
-urls = {Homepage = "https://github.com/cdisc-org/business-rules"}
+urls = {Homepage = "https://github.com/AhnafCodes/checkngn"}
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",

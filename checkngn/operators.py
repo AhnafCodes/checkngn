@@ -24,7 +24,7 @@ class BaseType(object):
                 for m in methods if getattr(m[1], 'is_operator', False)]
 
 def export_type(cls):
-    """ Decorator to expose the given class to business_rules.export_rule_data. """
+    """ Decorator to expose the given class to checkngn.export_rule_data. """
     cls.export_in_rule_data = True
     return cls
 

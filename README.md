@@ -1,423 +1,299 @@
-business-rules
-==============
+# checkngn
 
-[![Build Status](https://travis-ci.org/venmo/business-rules.svg?branch=master)](https://travis-ci.org/venmo/business-rules)
+A lightweight Python DSL for setting up business intelligence rules that can be configured without code.
+(NOTE Disclaimer: Fork of Venmo-Business-Rules and CDICS-business-rules-enhanced, with simple updates like project setup and logging)
 
-As a software system grows in complexity and usage, it can become burdensome if
-every change to the logic/behavior of the system also requires you to write and
-deploy new code. The goal of this business rules engine is to provide a simple
-interface allowing anyone to capture new rules and logic defining the behavior
-of a system, and a way to then process those rules on the backend.
+[![CI](https://github.com/AhnafCodes/business-rules/actions/workflows/automatic-test.yml/badge.svg)](https://github.com/AhnafCodes/business-rules/actions/workflows/automatic-test.yml)
 
-You might, for example, find this is a useful way for analysts to define
-marketing logic around when certain customers or items are eligible for a
-discount or to automate emails after users enter a certain state or go through
-a particular sequence of events.
+## Overview
 
-<p align="center">
-    <img src="http://cdn.memegenerator.net/instances/400x/36514579.jpg" />
-</p>
+As a software system grows in complexity and usage, it can become burdensome if every change to the logic/behavior of the system also requires you to write and deploy new code. **checkngn** provides a simple interface allowing anyone to capture new rules and logic defining the behavior of a system, and a way to then process those rules on the backend.
 
-## Usage
+Use cases:
+- Marketing logic for customer/item discount eligibility
+- Automated emails based on user state or event sequences
+- Data validation rules for pandas DataFrames
+- Any condition-action workflow
 
-### 1. Define Your set of variables
+## Installation
 
-Variables represent values in your system, usually the value of some particular object.  You create rules by setting threshold conditions such that when a variable is computed that triggers the condition some action is taken.
+```bash
+# Using pip
+pip install checkngn
 
-You define all the available variables for a certain kind of object in your code, and then later dynamically set the conditions and thresholds for those.
+# Using uv (faster)
+uv pip install checkngn
+```
 
-For example:
+**Requirements:** Python 3.14+
+
+## Quick Start
 
 ```python
-class ProductVariables(BaseVariables):
+from checkngn import run_all
+from checkngn.variables import BaseVariables, numeric_rule_variable, string_rule_variable
+from checkngn.actions import BaseActions, rule_action
+from checkngn.fields import FIELD_NUMERIC
 
+# 1. Define variables
+class ProductVariables(BaseVariables):
     def __init__(self, product):
         self.product = product
 
-    @numeric_rule_variable
+    @numeric_rule_variable()
+    def current_inventory(self):
+        return self.product['inventory']
+
+    @string_rule_variable()
+    def product_name(self):
+        return self.product['name']
+
+# 2. Define actions
+class ProductActions(BaseActions):
+    def __init__(self, product):
+        self.product = product
+
+    @rule_action(params={"sale_percentage": FIELD_NUMERIC})
+    def put_on_sale(self, sale_percentage, results=None):
+        self.product['price'] *= (1.0 - sale_percentage)
+
+# 3. Define rules
+rules = [
+    {
+        "conditions": {
+            "all": [
+                {"name": "current_inventory", "operator": "greater_than", "value": 20},
+                {"name": "product_name", "operator": "contains", "value": "Widget"}
+            ]
+        },
+        "actions": [
+            {"name": "put_on_sale", "params": {"sale_percentage": 0.25}}
+        ]
+    }
+]
+
+# 4. Run rules
+product = {'name': 'Super Widget', 'inventory': 50, 'price': 100.0}
+run_all(rules, ProductVariables(product), ProductActions(product))
+print(product['price'])  # 75.0
+```
+
+## Debug Mode
+
+Enable "check engine light" debug output to see rule evaluation:
+
+```python
+run_all(rules, variables, actions, debug=True)
+```
+
+Output:
+```
+🔧 [checkngn] Evaluating rule 1/1
+🔧 [checkngn] ✓ condition 'current_inventory greater_than 20' → True
+🔧 [checkngn] ✓ condition 'product_name contains Widget' → True
+🔧 [checkngn] ✓ 'all' block → True
+🔧 [checkngn] Rule triggered ✓
+🔧 [checkngn] Executing action 'put_on_sale' with {'sale_percentage': 0.25}
+```
+
+Or enable globally:
+```python
+from checkngn import enable_debug
+enable_debug(True)
+```
+
+## Usage Guide
+
+### 1. Define Variables
+
+Variables represent values in your system. You define all available variables for a certain kind of object, then dynamically set conditions and thresholds for those.
+
+```python
+from checkngn.variables import (
+    BaseVariables,
+    numeric_rule_variable,
+    string_rule_variable,
+    boolean_rule_variable,
+    select_rule_variable,
+    select_multiple_rule_variable,
+    dataframe_rule_variable
+)
+
+class ProductVariables(BaseVariables):
+    def __init__(self, product):
+        self.product = product
+
+    @numeric_rule_variable()
     def current_inventory(self):
         return self.product.current_inventory
 
     @numeric_rule_variable(label='Days until expiration')
-    def expiration_days(self)
-        last_order = self.product.orders[-1]
-        return (last_order.expiration_date - datetime.date.today()).days
+    def expiration_days(self):
+        return (self.product.expiration_date - datetime.date.today()).days
 
     @string_rule_variable()
     def current_month(self):
         return datetime.datetime.now().strftime("%B")
 
-    @select_rule_variable(options=Products.top_holiday_items())
-    def goes_well_with(self):
-        return products.related_products
+    @select_rule_variable(options=['Electronics', 'Clothing', 'Food'])
+    def category(self):
+        return self.product.category
 ```
 
-### 2. Define your set of actions
+### 2. Define Actions
 
-These are the actions that are available to be taken when a condition is triggered.
-
-For example:
+Actions are executed when conditions are triggered.
 
 ```python
-class ProductActions(BaseActions):
+from checkngn.actions import BaseActions, rule_action
+from checkngn.fields import FIELD_NUMERIC, FIELD_TEXT, FIELD_SELECT
 
+class ProductActions(BaseActions):
     def __init__(self, product):
         self.product = product
 
     @rule_action(params={"sale_percentage": FIELD_NUMERIC})
-    def put_on_sale(self, sale_percentage):
-        self.product.price = (1.0 - sale_percentage) * self.product.price
+    def put_on_sale(self, sale_percentage, results=None):
+        self.product.price *= (1.0 - sale_percentage)
         self.product.save()
 
     @rule_action(params={"number_to_order": FIELD_NUMERIC})
-    def order_more(self, number_to_order):
-        ProductOrder.objects.create(product_id=self.product.id,
-                                    quantity=number_to_order)
+    def order_more(self, number_to_order, results=None):
+        ProductOrder.objects.create(
+            product_id=self.product.id,
+            quantity=number_to_order
+        )
 ```
 
-If you need a select field for an action parameter, another -more verbose- syntax is available:
+### 3. Build Rules
 
-```python
-class ProductActions(BaseActions):
-
-    def __init__(self, product):
-        self.product = product
-
-    @rule_action(params=[{'fieldType': FIELD_SELECT,
-                          'name': 'stock_state',
-                          'label': 'Stock state',
-                          'options': [
-                            {'label': 'Available', 'name': 'available'},
-                            {'label': 'Last items', 'name': 'last_items'},
-                            {'label': 'Out of stock', 'name': 'out_of_stock'}
-                        ]}])
-    def change_stock_state(self, stock_state):
-        self.product.stock_state = stock_state
-        self.product.save()
-```
-
-### 3. Build the rules
-
-A rule is just a JSON object that gets interpreted by the business-rules engine.
-
-Note that the JSON is expected to be auto-generated by a UI, which makes it simple for anyone to set and tweak business rules without knowing anything about the code.  The javascript library used for generating these on the web can be found [here](https://github.com/venmo/business-rules-ui).
-
-An example of the resulting python lists/dicts is:
+Rules are JSON/dict structures with `conditions` and `actions`:
 
 ```python
 rules = [
     # expiration_days < 5 AND current_inventory > 20
     {
-       "conditions":{
-          "all":[
-             {
-                "name":"expiration_days",
-                "operator":"less_than",
-                "value":5
-             },
-             {
-                "name":"current_inventory",
-                "operator":"greater_than",
-                "value":20
-             }
-          ]
-       },
-       "actions":[
-          {
-             "name":"put_on_sale",
-             "params":{
-                "sale_percentage":0.25
-             }
-          }
-       ]
+        "conditions": {
+            "all": [
+                {"name": "expiration_days", "operator": "less_than", "value": 5},
+                {"name": "current_inventory", "operator": "greater_than", "value": 20}
+            ]
+        },
+        "actions": [
+            {"name": "put_on_sale", "params": {"sale_percentage": 0.25}}
+        ]
     },
-    # NOT expiration_days < 5 AND current_inventory > 20
+    # current_inventory < 5 OR current_month = "December"
     {
-       "conditions":{
-          "not":{
-             "all":[
-                {
-                   "name":"expiration_days",
-                   "operator":"less_than",
-                   "value":5
-                },
-                {
-                   "name":"current_inventory",
-                   "operator":"greater_than",
-                   "value":20
-                }
-             ]
-          }
-       },
-       "actions":[
-          {
-             "name":"put_on_sale",
-             "params":{
-                "sale_percentage":0.25
-             }
-          }
-       ]
+        "conditions": {
+            "any": [
+                {"name": "current_inventory", "operator": "less_than", "value": 5},
+                {"name": "current_month", "operator": "equal_to", "value": "December"}
+            ]
+        },
+        "actions": [
+            {"name": "order_more", "params": {"number_to_order": 40}}
+        ]
     },
-    # current_inventory < 5 OR (current_month = "December" AND current_inventory < 20)
+    # NOT (current_inventory > 100)
     {
-       "actions":[
-          {
-             "name":"order_more",
-             "params":{
-                "number_to_order":40
-             }
-          }
-       ],
-       "conditions":{
-          "any":[
-             {
-                "name":"current_inventory",
-                "operator":"less_than",
-                "value":5
-             },
-             {
-                "all":[
-                   {
-                      "name":"current_month",
-                      "operator":"equal_to",
-                      "value":"December"
-                   },
-                   {
-                      "name":"current_inventory",
-                      "operator":"less_than",
-                      "value":20
-                   }
-                ]
-             }
-          ]
-       }
+        "conditions": {
+            "not": {
+                "name": "current_inventory", "operator": "greater_than", "value": 100
+            }
+        },
+        "actions": [
+            {"name": "order_more", "params": {"number_to_order": 10}}
+        ]
     }
 ]
 ```
 
-### Export the available variables, operators and actions
+**Condition operators:**
+- `all` - All conditions must be True (AND)
+- `any` - At least one condition must be True (OR)
+- `not` - Negates the condition
 
-To e.g. send to your client so it knows how to build rules
+### 4. Export Rule Schema
+
+Export available variables, operators, and actions for UI generation:
 
 ```python
-from business_rules import export_rule_data
-export_rule_data(ProductVariables, ProductActions)
+from checkngn import export_rule_data
+
+schema = export_rule_data(ProductVariables, ProductActions)
 ```
 
-that returns
-
+Returns:
 ```python
-{"variables": [
-    { "name": "expiration_days",
-      "label": "Days until expiration",
-      "field_type": "numeric",
-      "options": []},
-    { "name": "current_month",
-      "label": "Current Month",
-      "field_type": "string",
-      "options": []},
-    { "name": "goes_well_with",
-      "label": "Goes Well With",
-      "field_type": "select",
-      "options": ["Eggnog", "Cookies", "Beef Jerkey"]}
-                ],
-  "actions": [
-    { "name": "put_on_sale",
-      "label": "Put On Sale",
-      "params": {"sale_percentage": "numeric"}},
-    { "name": "order_more",
-      "label": "Order More",
-      "params": {"number_to_order": "numeric"}}
-  ],
-  "variable_type_operators": {
-    "numeric": [ {"name": "equal_to",
-                  "label": "Equal To",
-                  "input_type": "numeric"},
-                 {"name": "less_than",
-                  "label": "Less Than",
-                  "input_type": "numeric"},
-                 {"name": "greater_than",
-                  "label": "Greater Than",
-                  "input_type": "numeric"}],
-    "string": [ { "name": "equal_to",
-                  "label": "Equal To",
-                  "input_type": "text"},
-                { "name": "non_empty",
-                  "label": "Non Empty",
-                  "input_type": "none"}]
-  }
+{
+    "variables": [
+        {"name": "current_inventory", "label": "Current Inventory", "field_type": "numeric", "options": []},
+        {"name": "expiration_days", "label": "Days until expiration", "field_type": "numeric", "options": []},
+        ...
+    ],
+    "actions": [
+        {"name": "put_on_sale", "label": "Put On Sale", "params": [{"name": "sale_percentage", "fieldType": "numeric", "label": "Sale Percentage"}]},
+        ...
+    ],
+    "variable_type_operators": {
+        "numeric": [
+            {"name": "equal_to", "label": "Equal To", "input_type": "numeric"},
+            {"name": "greater_than", "label": "Greater Than", "input_type": "numeric"},
+            ...
+        ],
+        "string": [...],
+        ...
+    }
 }
 ```
 
-### Run your rules
+### 5. Run Rules
 
 ```python
-from business_rules import run_all
+from checkngn import run_all
 
-rules = _some_function_to_receive_from_client()
-
-for product in Products.objects.all():
-    run_all(rule_list=rules,
-            defined_variables=ProductVariables(product),
-            defined_actions=ProductActions(product),
-            stop_on_first_trigger=True
-           )
+for product in products:
+    run_all(
+        rule_list=rules,
+        defined_variables=ProductVariables(product),
+        defined_actions=ProductActions(product),
+        stop_on_first_trigger=True,  # Stop after first matching rule
+        debug=False  # Set True for debug output
+    )
 ```
 
-## API
+## Variable Types & Operators
 
-#### Variable Types and Decorators:
-
-The type represents the type of the value that will be returned for the variable and is necessary since there are different available comparison operators for different types, and the front-end that's generating the rules needs to know which operators are available.
-
-All decorators can optionally take a label:
-- `label` - A human-readable label to show on the frontend. By default we just split the variable name on underscores and capitalize the words.
-
-The available types and decorators are:
-
-**numeric** - an integer, float, or python Decimal.
-
-`@numeric_rule_variable` operators:
-
-* `equal_to`
-* `greater_than`
-* `less_than`
-* `greater_than_or_equal_to`
-* `less_than_or_equal_to`
-
-Note: to compare floating point equality we just check that the difference is less than some small epsilon
-
-**string** - a python bytestring or unicode string.
-
-`@string_rule_variable` operators:
-
-* `equal_to`
-* `starts_with`
-* `ends_with`
-* `contains`
-* `matches_regex`
-* `non_empty`
-
-**boolean** - a True or False value.
-
-`@boolean_rule_variable` operators:
-
-* `is_true`
-* `is_false`
-
-**select** - a set of values, where the threshold will be a single item.
-
-`@select_rule_variable` operators:
-
-* `contains`
-* `does_not_contain`
-
-**select_multiple** - a set of values, where the threshold will be a set of items.
-
-`@select_multiple_rule_variable` operators:
-
-* `contains_all`
-* `is_contained_by`
-* `shares_at_least_one_element_with`
-* `shares_exactly_one_element_with`
-* `shares_no_elements_with`
-
-**dataframe** - A pandas dataframe
-
-`@dataframe_rule_variable` operators:
-
-* `contains`
-* `does_not_contain`
-* `contains_case_insensitive`
-* `does_not_contain_case_insensitive`
-* `equal_to`
-* `not_equal_to`
-* `starts_with`
-* `ends_with`
-* `matches_regex`
-* `not_matches_regex`
-* `greater_than`
-* `less_than`
-* `greater_than_or_equal_to`
-* `less_than_or_equal_to`
-* `non_empty`
-* `non_empty_within_except_last_row`
-* `empty`
-* `empty_within_except_last_row`
-* `contains_all`
-* `not_contains_all`
-* `exists`
-* `not_exists`
-* `has_equal_length`
-* `has_not_equal_length`
-* `equal_to_case_insensitive`
-* `not_equal_to_case_insensitive`
-* `is_contained_by`
-* `is_not_contained_by`
-* `is_contained_by_case_insensitive`
-* `is_not_contained_by_case_insensitive`
-* `longer_than`
-* `longer_than_or_equal_to`
-* `shorter_than`
-* `shorter_than_or_equal_to`
-* `invalid_date`
-* `date_equal_to`
-* `date_not_equal_to`
-* `date_less_than`
-* `date_less_than_or_equal_to`
-* `date_greater_than`
-* `date_greater_than_or_equal_to`
-* `is_complete_date`
-* `is_incomplete_date`
-* `is_unique_set`
-* `is_not_unique_set`
-* `is_ordered_set`
-* `is_not_ordered_set`
-* `is_not_unique_relationship`
-* `is_unique_relationship`
-* `is_not_valid_relationship`
-* `is_valid_relationship`
-* `is_not_valid_reference`
-* `is_valid_reference`
-* `non_conformant_value_data_type`
-* `conformant_value_data_type`
-* `non_conformant_value_length`
-* `conformant_value_length`
-* `has_next_corresponding_record`
-* `does_not_have_next_corresponding_record`
-* `present_on_multiple_rows_within`
-* `not_present_on_multiple_rows_within`
-* `additional_columns_empty`
-* `additional_columns_not_empty`
-* `has_different_values`
-* `has_same_values`
-* `references_correct_codelist`
-* `does_not_reference_correct_codelist`
-* `does_not_use_valid_codelist_terms`
-* `uses_valid_codelist_terms`
-* `is_ordered_by`
-* `is_not_ordered_by`
-* `is_target_sorted_by`
-* `is_target_not_sorted_by`
-* `value_has_multiple_references`
-* `value_does_not_have_multiple_references`
-* `suffix_equal_to`
-* `suffix_not_equal_to`
-* `prefix_equal_to`
-* `prefix_not_equal_to`
-* `equals_string_part`
-* `does_not_equal_string_part`
-
-### Returning data to your client
-
-
+| Decorator | Type | Operators |
+|-----------|------|-----------|
+| `@numeric_rule_variable()` | int, float | `equal_to`, `greater_than`, `less_than`, `greater_than_or_equal_to`, `less_than_or_equal_to` |
+| `@string_rule_variable()` | str | `equal_to`, `equal_to_case_insensitive`, `starts_with`, `ends_with`, `contains`, `matches_regex`, `non_empty` |
+| `@boolean_rule_variable()` | bool | `is_true`, `is_false` |
+| `@select_rule_variable()` | list | `contains`, `does_not_contain` |
+| `@select_multiple_rule_variable()` | list | `contains_all`, `is_contained_by`, `shares_at_least_one_element_with`, `shares_exactly_one_element_with`, `shares_no_elements_with` |
+| `@dataframe_rule_variable()` | pd.DataFrame/Series | `exists`, `not_exists` |
 
 ## Contributing
 
-Open up a pull request, making sure to add tests for any new functionality. To set up the dev environment (assuming you're using [virtualenvwrapper](http://docs.python-guide.org/en/latest/dev/virtualenvs/#virtualenvwrapper)):
-
 ```bash
-$ mkvirtualenv business-rules
-$ pip install -e .[dev]
-$ pytest
+# Clone the repo
+git clone https://github.com/AhnafCodes/business-rules.git
+cd business-rules
+
+# Install dev dependencies
+pip install -e ".[dev]"
+# or with uv
+uv pip install -e ".[dev]"
+
+# Run tests
+pytest
 ```
+
+## Documentation
+
+See [INTERNALS.md](INTERNALS.md) for detailed architecture documentation.
+
+## License
+
+MIT
