@@ -236,6 +236,18 @@ rules = [
 - `any` - At least one condition must be True (OR)
 - `not` - Negates the condition
 
+**Action formats:**
+
+Actions support three formats:
+
+```python
+"actions": [
+    {"action": "put_on_sale", "params": {"percent": 25}},  # dict
+    ["order_more", {"quantity": 10}],                       # list
+    "notify_manager"                                        # string (no params)
+]
+```
+
 ### 4. Export Rule Schema
 
 Export available variables, operators, and actions for UI generation:

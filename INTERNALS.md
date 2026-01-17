@@ -459,18 +459,48 @@ def _do_operator_comparison(operator_type, operator_name, comparison_value):
     return method(comparison_value)
 ```
 
+**`normalize_action()`** - Normalizes action formats to standard dict:
+
+```python
+def normalize_action(action_data):
+    """
+    Normalize action to standard format: {"action": "name", "params": {}}
+
+    Supported formats:
+        String: "notify_manager"
+        List:   ["put_on_sale", {"percent": 25}]
+        Dict:   {"action": "log_event", "params": {"id": 1}}
+    """
+    data_type = type(action_data)
+
+    if data_type is str:
+        return {"action": action_data, "params": {}}
+
+    if data_type in (list, tuple):
+        return {
+            "action": action_data[0],
+            "params": action_data[1] if len(action_data) > 1 else {}
+        }
+
+    if data_type is dict and (action := action_data.get("action")):
+        return {"action": action, "params": action_data.get("params") or {}}
+
+    raise ValueError(f"Unknown action format: {action_data}")
+```
+
 **`do_actions()`** - Executes triggered actions:
 
 ```python
 def do_actions(actions, defined_actions, results=None):
     for action in actions:
-        method_name = action['action']
+        normalized = normalize_action(action)
+        method_name = normalized['action']
+        params = normalized['params']
         method = getattr(defined_actions, method_name, _MISSING)
         if method is _MISSING:
             raise AssertionError(
                 f"Action {method_name} is not defined in class {defined_actions.__class__.__name__}"
             )
-        params = action.get('params') or {}
         method(**params, results=results)  # Pass results for DataFrame filtering
 ```
 
