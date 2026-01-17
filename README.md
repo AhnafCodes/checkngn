@@ -140,6 +140,25 @@ class ProductVariables(BaseVariables):
     def category(self):
         return self.product.category
 ```
+OR with dataclasses(this applies to Actions Definitions as well):
+```python
+...
+@dataclass
+class ProductVariables(BaseVariables):
+    product: Product 
+
+    @numeric_rule_variable
+    def current_inventory(self):
+        # This works because 'Product' has an .inventory attribute
+        return self.product.inventory 
+
+    @string_rule_variable
+    def product_name(self):
+        return self.product.name
+    ....
+
+```
+
 
 ### 2. Define Actions
 
