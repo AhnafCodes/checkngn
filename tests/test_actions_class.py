@@ -1,5 +1,5 @@
-from business_rules.actions import BaseActions, rule_action
-from business_rules.fields import FIELD_TEXT
+from checkngn.actions import BaseActions, rule_action
+from checkngn.fields import FIELD_TEXT
 from . import TestCase
 
 class ActionsClassTests(TestCase):
@@ -33,14 +33,14 @@ class ActionsClassTests(TestCase):
     def test_rule_action_doesnt_allow_unknown_field_types(self):
         err_string = "Unknown field type blah specified for action some_action"\
                 " param foo"
-        with self.assertRaisesRegexp(AssertionError, err_string):
+        with self.assertRaisesRegex(AssertionError, err_string):
             @rule_action(params={'foo': 'blah'})
             def some_action(self, foo):
                 pass
 
     def test_rule_action_doesnt_allow_unknown_parameter_name(self):
         err_string = "Unknown parameter name foo specified for action some_action"
-        with self.assertRaisesRegexp(AssertionError, err_string):
+        with self.assertRaisesRegex(AssertionError, err_string):
             @rule_action(params={'foo': 'blah'})
             def some_action(self):
                 pass
