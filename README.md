@@ -4,7 +4,7 @@ A lightweight Python DSL for setting up business intelligence rules that can be 
 
 (NOTE Disclaimer: Fork of Venmo-Business-Rules and CDICS-business-rules-enhanced, with simple updates like project setup and logging)
 
-[![CI](https://github.com/AhnafCodes/business-rules/actions/workflows/automatic-test.yml/badge.svg)](https://github.com/AhnafCodes/business-rules/actions/workflows/automatic-test.yml)
+[![CI](https://github.com/AhnafCodes/checkngn/actions/workflows/automatic-test.yml/badge.svg)](https://github.com/AhnafCodes/checkngn/actions/workflows/automatic-test.yml)
 
 ## Overview
 
@@ -26,7 +26,7 @@ pip install checkngn
 uv pip install checkngn
 ```
 
-**Requirements:** Python 3.14+
+**Requirements:** Python 3.13+
 
 ## Quick Start
 
@@ -279,16 +279,14 @@ for product in products:
 
 ```bash
 # Clone the repo
-git clone https://github.com/AhnafCodes/business-rules.git
-cd business-rules
+git clone https://github.com/AhnafCodes/checkngn.git
+cd checkngn
 
 # Install dev dependencies
-pip install -e ".[dev]"
-# or with uv
 uv pip install -e ".[dev]"
 
 # Run tests
-pytest
+uv run pytest
 ```
 
 ## Documentation
