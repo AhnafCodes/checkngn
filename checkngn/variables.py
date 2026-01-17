@@ -13,7 +13,7 @@ class BaseVariables(object):
     @cache
     def get_all_variables(cls):
         methods = inspect.getmembers(cls)
-        return [{'name': m[0],
+        return [{'field': m[0],
                  'label': m[1].label,
                  'field_type': m[1].field_type.name,
                  'options': m[1].options,

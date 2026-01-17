@@ -142,7 +142,7 @@ class BaseType(object):
     def get_all_operators(cls):
         # Uses introspection to find all methods decorated with @type_operator
         methods = inspect.getmembers(cls)
-        return [{'name': m[0], 'label': m[1].label, 'input_type': m[1].input_type}
+        return [{'operator': m[0], 'label': m[1].label, 'input_type': m[1].input_type}
                 for m in methods if getattr(m[1], 'is_operator', False)]
 ```
 
@@ -222,7 +222,7 @@ class BaseVariables(object):
     @cache
     def get_all_variables(cls):
         methods = inspect.getmembers(cls)
-        return [{'name': m[0],
+        return [{'field': m[0],
                  'label': m[1].label,
                  'field_type': m[1].field_type.name,
                  'options': m[1].options}
@@ -293,7 +293,7 @@ class BaseActions(object):
     @cache
     def get_all_actions(cls):
         methods = inspect.getmembers(cls)
-        return [{'name': m[0], 'label': m[1].label, 'params': m[1].params}
+        return [{'action': m[0], 'label': m[1].label, 'params': m[1].params}
                 for m in methods if getattr(m[1], 'is_rule_action', False)]
 ```
 

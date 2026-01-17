@@ -18,7 +18,7 @@ class BaseType(object):
     @cache
     def get_all_operators(cls):
         methods = inspect.getmembers(cls)
-        return [{'name': m[0],
+        return [{'operator': m[0],
                  'label': m[1].label,
                  'input_type': m[1].input_type}
                 for m in methods if getattr(m[1], 'is_operator', False)]

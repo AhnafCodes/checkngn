@@ -23,7 +23,7 @@ class ActionsClassTests(TestCase):
 
         actions = SomeActions.get_all_actions()
         self.assertEqual(len(actions), 1)
-        self.assertEqual(actions[0]['name'], 'some_action')
+        self.assertEqual(actions[0]['action'], 'some_action')
         self.assertEqual(actions[0]['label'], 'Some Action')
         self.assertEqual(actions[0]['params'], [{'fieldType': FIELD_TEXT, 'name': 'foo', 'label': 'Foo'}])
 

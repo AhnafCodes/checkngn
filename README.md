@@ -262,18 +262,18 @@ Returns:
 ```python
 {
     "variables": [
-        {"name": "current_inventory", "label": "Current Inventory", "field_type": "numeric", "options": []},
-        {"name": "expiration_days", "label": "Days until expiration", "field_type": "numeric", "options": []},
+        {"field": "current_inventory", "label": "Current Inventory", "field_type": "numeric", "options": []},
+        {"field": "expiration_days", "label": "Days until expiration", "field_type": "numeric", "options": []},
         ...
     ],
     "actions": [
-        {"name": "put_on_sale", "label": "Put On Sale", "params": [{"name": "sale_percentage", "fieldType": "numeric", "label": "Sale Percentage"}]},
+        {"action": "put_on_sale", "label": "Put On Sale", "params": [{"name": "sale_percentage", "fieldType": "numeric", "label": "Sale Percentage"}]},
         ...
     ],
     "variable_type_operators": {
         "numeric": [
-            {"name": "equal_to", "label": "Equal To", "input_type": "numeric"},
-            {"name": "greater_than", "label": "Greater Than", "input_type": "numeric"},
+            {"operator": "equal_to", "label": "Equal To", "input_type": "numeric"},
+            {"operator": "greater_than", "label": "Greater Than", "input_type": "numeric"},
             ...
         ],
         "string": [...],

@@ -18,7 +18,7 @@ class BaseActions(object):
     @cache
     def get_all_actions(cls):
         methods = inspect.getmembers(cls)
-        return [{'name': m[0],
+        return [{'action': m[0],
                  'label': m[1].label,
                  'params': m[1].params
                 } for m in methods if getattr(m[1], 'is_rule_action', False)]
