@@ -40,8 +40,8 @@ The library separates the "what to check" (variables), "how to check" (operators
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              Rule Definition (JSON/dict)                     │
 │  {                                                                          │
-│    "conditions": {"all": [{"name": "age", "operator": "greater_than", ...}]}│
-│    "actions": [{"name": "send_email", "params": {...}}]                     │
+│    "conditions": {"all": [{"field": "age", "operator": "greater_than", ...}]}│
+│    "actions": [{"action": "send_email", "params": {...}}]                     │
 │  }                                                                          │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
@@ -417,11 +417,11 @@ def check_conditions_recursively(conditions, defined_variables):
 
 ```python
 def check_condition(condition, defined_variables):
-    name, op, value = condition['name'], condition['operator'], condition['value']
+    field, op, value = condition['field'], condition['operator'], condition['value']
     params = condition.get("params")
 
     # Get the variable value wrapped in its type class
-    operator_type = _get_variable_value(defined_variables, name, params)
+    operator_type = _get_variable_value(defined_variables, field, params)
 
     # Execute the operator
     return _do_operator_comparison(operator_type, op, value)
@@ -464,7 +464,7 @@ def _do_operator_comparison(operator_type, operator_name, comparison_value):
 ```python
 def do_actions(actions, defined_actions, results=None):
     for action in actions:
-        method_name = action['name']
+        method_name = action['action']
         method = getattr(defined_actions, method_name, _MISSING)
         if method is _MISSING:
             raise AssertionError(
@@ -538,13 +538,13 @@ Here's how data flows through the system when a rule is executed:
    │ rule = {                                │
    │   "conditions": {                       │
    │     "all": [{                           │
-   │       "name": "total_amount",           │
+   │       "field": "total_amount",          │
    │       "operator": "greater_than",       │
    │       "value": 100                      │
    │     }]                                  │
    │   },                                    │
    │   "actions": [{                         │
-   │     "name": "apply_discount",           │
+   │     "action": "apply_discount",         │
    │     "params": {"percent": 10}           │
    │   }]                                    │
    │ }                                       │
@@ -580,7 +580,7 @@ Rules are dictionaries with this structure:
         "all": [
             # Nested conditions (can be all/any/not or leaf)
             {
-                "name": "variable_name",      # Method name on variables class
+                "field": "variable_name",     # Method name on variables class
                 "operator": "operator_name",  # Method name on type class
                 "value": <comparison_value>,  # Value to compare against
                 "params": {}                  # Optional params for variable
@@ -594,8 +594,8 @@ Rules are dictionaries with this structure:
     },
     "actions": [
         {
-            "name": "action_name",   # Method name on actions class
-            "params": {              # Parameters passed to action
+            "action": "action_name",  # Method name on actions class
+            "params": {               # Parameters passed to action
                 "param_name": value
             }
         }
@@ -647,12 +647,12 @@ class OrderActions(BaseActions):
 rule = {
     "conditions": {
         "all": [
-            {"name": "order_total", "operator": "greater_than", "value": 100},
-            {"name": "item_count", "operator": "greater_than_or_equal_to", "value": 2}
+            {"field": "order_total", "operator": "greater_than", "value": 100},
+            {"field": "item_count", "operator": "greater_than_or_equal_to", "value": 2}
         ]
     },
     "actions": [
-        {"name": "apply_discount", "params": {"percent": 15}}
+        {"action": "apply_discount", "params": {"percent": 15}}
     ]
 }
 
@@ -670,8 +670,8 @@ run_all([rule], variables, actions)
     ├── check_conditions_recursively(conditions, variables)
     │   └── match ["all"]
     │       ├── check_conditions_recursively(condition[0], variables)
-    │       │   └── match ["name", "operator", "value"]  # leaf
-    │       │       └── check_condition({"name": "order_total", ...}, variables)
+    │       │   └── match ["field", "operator", "value"]  # leaf
+    │       │       └── check_condition({"field": "order_total", ...}, variables)
     │       │           ├── _get_variable_value(variables, "order_total")
     │       │           │   ├── method = variables.order_total
     │       │           │   ├── val = method() → 150
@@ -682,7 +682,7 @@ run_all([rule], variables, actions)
     │       │   └── ... → True
     │       └── return True & True → True
     ├── rule_triggered = True
-    └── do_actions([{"name": "apply_discount", ...}], actions, results=True)
+    └── do_actions([{"action": "apply_discount", ...}], actions, results=True)
         └── actions.apply_discount(percent=15, results=True)
             └── order["discount"] = 15
 ```
@@ -787,8 +787,8 @@ class CustomerVariables(BaseVariables):
 rule = {
     "conditions": {
         "all": [
-            {"name": "customer_email", "operator": "domain_equals", "value": "company.com"},
-            {"name": "customer_email", "operator": "is_corporate", "value": None}
+            {"field": "customer_email", "operator": "domain_equals", "value": "company.com"},
+            {"field": "customer_email", "operator": "is_corporate", "value": None}
         ]
     },
     "actions": [...]

@@ -63,12 +63,12 @@ rules = [
     {
         "conditions": {
             "all": [
-                {"name": "current_inventory", "operator": "greater_than", "value": 20},
-                {"name": "product_name", "operator": "contains", "value": "Widget"}
+                {"field": "current_inventory", "operator": "greater_than", "value": 20},
+                {"field": "product_name", "operator": "contains", "value": "Widget"}
             ]
         },
         "actions": [
-            {"name": "put_on_sale", "params": {"sale_percentage": 0.25}}
+            {"action": "put_on_sale", "params": {"sale_percentage": 0.25}}
         ]
     }
 ]
@@ -176,35 +176,35 @@ rules = [
     {
         "conditions": {
             "all": [
-                {"name": "expiration_days", "operator": "less_than", "value": 5},
-                {"name": "current_inventory", "operator": "greater_than", "value": 20}
+                {"field": "expiration_days", "operator": "less_than", "value": 5},
+                {"field": "current_inventory", "operator": "greater_than", "value": 20}
             ]
         },
         "actions": [
-            {"name": "put_on_sale", "params": {"sale_percentage": 0.25}}
+            {"action": "put_on_sale", "params": {"sale_percentage": 0.25}}
         ]
     },
     # current_inventory < 5 OR current_month = "December"
     {
         "conditions": {
             "any": [
-                {"name": "current_inventory", "operator": "less_than", "value": 5},
-                {"name": "current_month", "operator": "equal_to", "value": "December"}
+                {"field": "current_inventory", "operator": "less_than", "value": 5},
+                {"field": "current_month", "operator": "equal_to", "value": "December"}
             ]
         },
         "actions": [
-            {"name": "order_more", "params": {"number_to_order": 40}}
+            {"action": "order_more", "params": {"number_to_order": 40}}
         ]
     },
     # NOT (current_inventory > 100)
     {
         "conditions": {
             "not": {
-                "name": "current_inventory", "operator": "greater_than", "value": 100
+                "field": "current_inventory", "operator": "greater_than", "value": 100
             }
         },
         "actions": [
-            {"name": "order_more", "params": {"number_to_order": 10}}
+            {"action": "order_more", "params": {"number_to_order": 10}}
         ]
     }
 ]

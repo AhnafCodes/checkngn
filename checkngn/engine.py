@@ -120,11 +120,11 @@ def check_condition(condition, defined_variables):
     variables, values, and the comparison operator. The defined_variables
     object must have a variable defined for any variables in this condition.
     """
-    name, op, value = condition['name'], condition['operator'], condition['value']
+    field, op, value = condition['field'], condition['operator'], condition['value']
     params = condition.get("params")
-    operator_type = _get_variable_value(defined_variables, name, params)
+    operator_type = _get_variable_value(defined_variables, field, params)
     result = _do_operator_comparison(operator_type, op, value)
-    logs.log_condition_result(name, op, value, bool(result))
+    logs.log_condition_result(field, op, value, bool(result))
     return result
 
 def _get_variable_value(defined_variables, name, params=None):
@@ -162,7 +162,7 @@ def _do_operator_comparison(operator_type, operator_name, comparison_value):
 
 def do_actions(actions, defined_actions, results=None):
     for action in actions:
-        method_name = action['name']
+        method_name = action['action']
         method = getattr(defined_actions, method_name, _MISSING)
         if method is _MISSING:
             raise AssertionError(
