@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "pandas>=2.3.3",
-    "numpy>=1.26.0",
+    "numpy>=2.4.0",
     "python-dateutil"
 ]
 
