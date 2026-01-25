@@ -22,3 +22,40 @@ def export_rule_data(variables, actions):
     return {"variables": variables_data,
             "actions": actions_data,
             "variable_type_operators": variable_type_operators}
+
+def normalize_action(action_data):
+    """
+    Normalize action to standard format: {"action": "name", "params": {}}
+
+    Supported formats:
+        String: "notify_manager"
+        List:   ["put_on_sale", {"percent": 25}]
+        Dict:   {"action": "log_event", "params": {"id": 1}}
+        List of actions: [{"action": "a"}, "b"] -> [{"action": "a", "params": {}}, {"action": "b", "params": {}}]
+    """
+    data_type = type(action_data)
+
+    if data_type is str:
+        return {"action": action_data, "params": {}}
+
+    if data_type is dict:
+        if "action" in action_data:
+            return {"action": action_data["action"], "params": action_data.get("params") or {}}
+        # If it's a dict but no "action" key, it might be invalid or something else.
+        # But let's assume valid input for now or raise error.
+        raise ValueError(f"Unknown action format (dict missing 'action'): {action_data}")
+
+    if data_type in (list, tuple):
+        # Check if it is a single action in list format ["name", params]
+        # It must be length 2, first is string, second is dict (params).
+        # AND the second dict should NOT have "action" key (otherwise it looks like list of actions where 2nd is an action)
+        if len(action_data) == 2 and isinstance(action_data[0], str) and isinstance(action_data[1], dict) and "action" not in action_data[1]:
+             return {
+                "action": action_data[0],
+                "params": action_data[1]
+            }
+        
+        # Otherwise, treat as list of actions
+        return [normalize_action(a) for a in action_data]
+
+    raise ValueError(f"Unknown action format: {action_data}")

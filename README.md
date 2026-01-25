@@ -238,8 +238,15 @@ rules = [
 
 **Action formats:**
 
-Actions support three formats:
-NOTE: dict is default, everything is normalized to "dict" internally
+Actions support three formats using utility function "normalize_action":
+NOTE: dict is default, everything is normalized to "dict" use utility function "normalize_action"
+
+```python
+from checkngn import normalize_action
+normalized_actions = normalize_action(actions)
+run_all(rules, variables, normalized_actions, debug=True)
+```
+
 ```python
 "actions": [
     {"action": "put_on_sale", "params": {"percent": 25}},   # dict - default
