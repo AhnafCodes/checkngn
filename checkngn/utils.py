@@ -1,4 +1,13 @@
 import inspect
+import json
+import sys
+
+import yaml
+
+try:
+    from yaml import CSafeLoader as SafeLoader, CSafeDumper as SafeDumper
+except ImportError:
+    from yaml import SafeLoader, SafeDumper
 
 def fn_name_to_pretty_label(name):
     return ' '.join([w.title() for w in name.split('_')])
@@ -59,3 +68,21 @@ def normalize_action(action_data):
         return [normalize_action(a) for a in action_data]
 
     raise ValueError(f"Unknown action format: {action_data}")
+
+
+def yaml_to_dict(yaml_input):
+    """Convert YAML to Python dictionary."""
+    data = yaml.load(yaml_input, Loader=SafeLoader)
+    return data
+
+
+def dict_to_yaml(dict_data, indent=2, default_flow_style=False):
+    """Convert Dictionary to YAML string."""
+    return yaml.dump(
+        dict_data,
+        Dumper=SafeDumper,
+        indent=indent,
+        default_flow_style=default_flow_style,
+        allow_unicode=True,
+        sort_keys=False,
+    )

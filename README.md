@@ -242,7 +242,7 @@ Actions support three formats using utility function "normalize_action":
 NOTE: dict is default, everything is normalized to "dict" use utility function "normalize_action"
 
 ```python
-from checkngn import normalize_action
+from checkngn.utils import normalize_action
 normalized_actions = normalize_action(actions)
 run_all(rules, variables, normalized_actions, debug=True)
 ```
@@ -316,6 +316,29 @@ for product in products:
 | `@dataframe_rule_variable()` | pd.DataFrame/Series | `exists`, `not_exists` |
 
 
+## Rules in YAML using utils
+
+```python
+from checkngn.utils import yaml_to_dict, dict_to_yaml
+
+yaml_rules = """
+- conditions:
+    all:
+      - field: current_inventory
+        operator: greater_than
+        value: 20
+  actions:
+    - action: put_on_sale
+      params:
+        sale_percentage: 0.25
+"""
+
+rules = yaml_to_dict(yaml_rules)
+run_all(rules, variables, actions)
+
+# Convert results back to YAML if needed
+yaml_result = dict_to_yaml(rules)
+```
 
 ## Alterntives
   - [CDIS Business Rules -Fork Venmo original](https://github.com/cdisc-org/business-rules) i.e. pre-cursor of this repo

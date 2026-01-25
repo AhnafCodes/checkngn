@@ -23,7 +23,8 @@ classifiers = [
 dependencies = [
     "pandas>=2.3.3",
     "numpy>=2.4.0",
-    "python-dateutil"
+    "python-dateutil",
+    "pyyaml>=6.0.3",
 ]
 
 [project.optional-dependencies]
