@@ -232,41 +232,7 @@ run_all(rules, variables, normalized_actions, debug=True)
 ]
 ```
 
-### 4. Export Rule Schema
-
-Export available variables, operators, and actions for UI generation:
-
-```python
-from checkngn import export_rule_data
-
-schema = export_rule_data(ProductVariables, ProductActions)
-```
-
-Returns:
-```python
-{
-    "variables": [
-        {"field": "current_inventory", "label": "Current Inventory", "field_type": "numeric", "options": []},
-        {"field": "expiration_days", "label": "Days until expiration", "field_type": "numeric", "options": []},
-        ...
-    ],
-    "actions": [
-        {"action": "put_on_sale", "label": "Put On Sale", "params": [{"name": "sale_percentage", "fieldType": "numeric", "label": "Sale Percentage"}]},
-        ...
-    ],
-    "variable_type_operators": {
-        "numeric": [
-            {"operator": "equal_to", "label": "Equal To", "input_type": "numeric"},
-            {"operator": "greater_than", "label": "Greater Than", "input_type": "numeric"},
-            ...
-        ],
-        "string": [...],
-        ...
-    }
-}
-```
-
-### 5. Run Rules
+### 4. Run Rules
 
 ```python
 from checkngn import run_all
@@ -315,7 +281,39 @@ Or enable globally:
 from checkngn import enable_debug
 enable_debug(True)
 ```
+## Export Rule Schema
 
+Export available variables, operators, and actions for UI generation:
+
+```python
+from checkngn import export_rule_data
+
+schema = export_rule_data(ProductVariables, ProductActions)
+```
+
+Returns:
+```python
+{
+    "variables": [
+        {"field": "current_inventory", "label": "Current Inventory", "field_type": "numeric", "options": []},
+        {"field": "expiration_days", "label": "Days until expiration", "field_type": "numeric", "options": []},
+        ...
+    ],
+    "actions": [
+        {"action": "put_on_sale", "label": "Put On Sale", "params": [{"name": "sale_percentage", "fieldType": "numeric", "label": "Sale Percentage"}]},
+        ...
+    ],
+    "variable_type_operators": {
+        "numeric": [
+            {"operator": "equal_to", "label": "Equal To", "input_type": "numeric"},
+            {"operator": "greater_than", "label": "Greater Than", "input_type": "numeric"},
+            ...
+        ],
+        "string": [...],
+        ...
+    }
+}
+```
 
 ## Rules in YAML using utils
 
