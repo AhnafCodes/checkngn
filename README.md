@@ -79,29 +79,6 @@ run_all(rules, ProductVariables(product), ProductActions(product))
 print(product['price'])  # 75.0
 ```
 
-## Debug Mode
-
-Enable "check engine light" debug output to see rule evaluation:
-
-```python
-run_all(rules, variables, actions, debug=True)
-```
-
-Output:
-```
-🔧 [checkngn] Evaluating rule 1/1
-🔧 [checkngn] ✓ condition 'current_inventory greater_than 20' → True
-🔧 [checkngn] ✓ condition 'product_name contains Widget' → True
-🔧 [checkngn] ✓ 'all' block → True
-🔧 [checkngn] Rule triggered ✓
-🔧 [checkngn] Executing action 'put_on_sale' with {'sale_percentage': 0.25}
-```
-
-Or enable globally:
-```python
-from checkngn import enable_debug
-enable_debug(True)
-```
 
 ## Usage Guide
 
@@ -314,6 +291,30 @@ for product in products:
 | `@select_rule_variable()` | list | `contains`, `does_not_contain` |
 | `@select_multiple_rule_variable()` | list | `contains_all`, `is_contained_by`, `shares_at_least_one_element_with`, `shares_exactly_one_element_with`, `shares_no_elements_with` |
 | `@dataframe_rule_variable()` | pd.DataFrame/Series | `exists`, `not_exists` |
+
+## Debug Mode
+
+Enable "check engine light" debug output to see rule evaluation:
+
+```python
+run_all(rules, variables, actions, debug=True)
+```
+
+Output:
+```
+🔧 [checkngn] Evaluating rule 1/1
+🔧 [checkngn] ✓ condition 'current_inventory greater_than 20' → True
+🔧 [checkngn] ✓ condition 'product_name contains Widget' → True
+🔧 [checkngn] ✓ 'all' block → True
+🔧 [checkngn] Rule triggered ✓
+🔧 [checkngn] Executing action 'put_on_sale' with {'sale_percentage': 0.25}
+```
+
+Or enable globally:
+```python
+from checkngn import enable_debug
+enable_debug(True)
+```
 
 
 ## Rules in YAML using utils
