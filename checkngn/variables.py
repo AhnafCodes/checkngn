@@ -3,6 +3,7 @@ from functools import cache
 
 from .utils import fn_name_to_pretty_label
 from .operators import BaseType, NumericType, StringType, BooleanType, SelectType, SelectMultipleType
+from .exceptions import RuleValidationError
 
 
 class BaseVariables(object):
@@ -25,9 +26,10 @@ def rule_variable(field_type, label=None, options=None):
     """
     options = options or []
     def wrapper(func):
-        if not (type(field_type) == type and issubclass(field_type, BaseType)):
-            raise AssertionError("{0} is not instance of BaseType in"\
-                    " rule_variable field_type".format(field_type))
+        if not (isinstance(field_type, type) and issubclass(field_type, BaseType)):
+            raise RuleValidationError(
+                f"{field_type} is not instance of BaseType in rule_variable field_type"
+            )
         func.field_type = field_type
         func.is_rule_variable = True
         func.label = label \

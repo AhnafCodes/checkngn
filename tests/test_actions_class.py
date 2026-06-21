@@ -1,5 +1,6 @@
 from checkngn.actions import BaseActions, rule_action
 from checkngn.fields import FIELD_TEXT
+from checkngn.exceptions import RuleValidationError
 from . import TestCase
 
 class ActionsClassTests(TestCase):
@@ -33,14 +34,14 @@ class ActionsClassTests(TestCase):
     def test_rule_action_doesnt_allow_unknown_field_types(self):
         err_string = "Unknown field type blah specified for action some_action"\
                 " param foo"
-        with self.assertRaisesRegex(AssertionError, err_string):
+        with self.assertRaisesRegex(RuleValidationError, err_string):
             @rule_action(params={'foo': 'blah'})
             def some_action(self, foo):
                 pass
 
     def test_rule_action_doesnt_allow_unknown_parameter_name(self):
         err_string = "Unknown parameter name foo specified for action some_action"
-        with self.assertRaisesRegex(AssertionError, err_string):
+        with self.assertRaisesRegex(RuleValidationError, err_string):
             @rule_action(params={'foo': 'blah'})
             def some_action(self):
                 pass
@@ -51,3 +52,13 @@ class ActionsClassTests(TestCase):
         def some_action(self): pass
 
         self.assertTrue(some_action.is_rule_action)
+
+    def test_rule_action_allows_params_via_kwargs(self):
+        """ A function that accepts **kwargs should accept any declared param
+        name (regression: co_varnames rejected these). """
+        @rule_action(params={'percent': FIELD_TEXT})
+        def some_action(self, **kwargs):
+            return kwargs
+
+        self.assertEqual(some_action.params,
+                         [{'fieldType': FIELD_TEXT, 'name': 'percent', 'label': 'Percent'}])
