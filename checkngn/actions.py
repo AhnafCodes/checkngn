@@ -3,6 +3,7 @@ from functools import cache
 
 from . import fields
 from .utils import fn_name_to_pretty_label
+from .exceptions import RuleValidationError
 
 # Precompute valid field types at module load
 _VALID_FIELDS = frozenset(
@@ -26,19 +27,32 @@ class BaseActions(object):
 def _validate_action_parameters(func, params):
     """ Verifies that the parameters specified are actual parameters for the
     function `func`, and that the field types are FIELD_* types in fields.
-    """
-    if params is not None:
-        for param in params:
-            param_name, field_type = param['name'], param['fieldType']
-            if param_name not in func.__code__.co_varnames:
-                raise AssertionError(
-                    f"Unknown parameter name {param_name} specified for action {func.__name__}"
-                )
 
-            if field_type not in _VALID_FIELDS:
-                raise AssertionError(
-                    f"Unknown field type {field_type} specified for action {func.__name__} param {param_name}"
-                )
+    Uses ``inspect.signature`` rather than ``func.__code__.co_varnames`` so that
+    functions accepting ``**kwargs`` (or wrapped/decorated functions) validate
+    correctly instead of rejecting every parameter name.
+    """
+    if params is None:
+        return
+
+    signature = inspect.signature(func)
+    accepts_kwargs = any(
+        p.kind is inspect.Parameter.VAR_KEYWORD
+        for p in signature.parameters.values()
+    )
+    valid_names = set(signature.parameters)
+
+    for param in params:
+        param_name, field_type = param['name'], param['fieldType']
+        if not accepts_kwargs and param_name not in valid_names:
+            raise RuleValidationError(
+                f"Unknown parameter name {param_name} specified for action {func.__name__}"
+            )
+
+        if field_type not in _VALID_FIELDS:
+            raise RuleValidationError(
+                f"Unknown field type {field_type} specified for action {func.__name__} param {param_name}"
+            )
 
 def rule_action(label=None, params=None):
     """ Decorator to make a function into a rule action

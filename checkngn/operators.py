@@ -29,6 +29,15 @@ def export_type(cls):
     return cls
 
 
+def _select_names(values):
+    """ Normalize a select-multiple comparison value to a list of names.
+
+    Accepts both the structured form ``[{'name': 'A'}, ...]`` and a plain list
+    of scalars ``['A', ...]`` so rules authored in either style work.
+    """
+    return [v['name'] if isinstance(v, dict) else v for v in values]
+
+
 def type_operator(input_type, label=None,
                   assert_type_for_arguments=True):
     """ Decorator to make a function into a type operator.
@@ -87,7 +96,7 @@ class StringType(BaseType):
 
     @type_operator(FIELD_TEXT)
     def matches_regex(self, regex):
-        return re.search(regex, self.value)
+        return bool(re.search(regex, self.value))
 
     @type_operator(FIELD_NO_INPUT)
     def non_empty(self):
@@ -181,27 +190,27 @@ class SelectMultipleType(BaseType):
 
     @type_operator(FIELD_SELECT_MULTIPLE)
     def contains_all(self, other_value):
-        select = [o['name'] for o in other_value]
+        select = _select_names(other_value)
         return set(select).issubset(set(self.value))
 
     @type_operator(FIELD_SELECT_MULTIPLE)
     def is_contained_by(self, other_value):
-        select = [o['name'] for o in other_value]
+        select = _select_names(other_value)
         return set(self.value).issubset(set(select))
 
     @type_operator(FIELD_SELECT_MULTIPLE)
     def shares_at_least_one_element_with(self, other_value):
-        select = [o['name'] for o in other_value]
-        return set(self.value).intersection(set(select))
+        select = _select_names(other_value)
+        return bool(set(self.value).intersection(set(select)))
 
     @type_operator(FIELD_SELECT_MULTIPLE)
     def shares_exactly_one_element_with(self, other_value):
-        select = [o['name'] for o in other_value]
+        select = _select_names(other_value)
         return len(set(self.value).intersection(set(select))) == 1
 
     @type_operator(FIELD_SELECT_MULTIPLE)
     def shares_no_elements_with(self, other_value):
-        select = [o['name'] for o in other_value]
+        select = _select_names(other_value)
         return len(set(self.value).intersection(set(select))) == 0
 
 @export_type
@@ -232,10 +241,10 @@ class DataframeType(BaseType):
             return value
         raise AssertionError(f"Value {value} is not a dataframe")
 
-    @type_operator(FIELD_TEXT)
-    def exists(self, other_value):
+    @type_operator(FIELD_NO_INPUT)
+    def exists(self):
         return self.value.notnull()
 
-    @type_operator(FIELD_TEXT)
-    def not_exists(self, other_value):
+    @type_operator(FIELD_NO_INPUT)
+    def not_exists(self):
         return self.value.isnull()

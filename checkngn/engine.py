@@ -1,9 +1,50 @@
 from .fields import FIELD_NO_INPUT
 from . import logs
+from .utils import normalize_action
+from .exceptions import (
+    RuleValidationError,
+    MissingVariableError,
+    UndefinedOperatorError,
+    UndefinedActionError,
+)
 import pandas as pd
 
 # Sentinel for missing attributes
 _MISSING = object()
+
+
+def _coerce_bool(result):
+    """ Coerce a condition result to a scalar bool for logging/branching.
+
+    ``DataframeType`` operators return a pandas Series; calling ``bool()`` on a
+    multi-element Series raises ``ValueError: The truth value of a Series is
+    ambiguous``. Treat a Series as truthy if any element is truthy.
+    """
+    if isinstance(result, pd.Series):
+        return bool(result.any())
+    return bool(result)
+
+
+def validate_rules(rule_list):
+    """ Fail fast with a helpful error if rules are structurally malformed.
+
+    Catches missing ``conditions``/``actions`` keys up front instead of raising
+    a raw ``KeyError`` deep inside condition evaluation.
+    """
+    if not isinstance(rule_list, (list, tuple)):
+        raise RuleValidationError(
+            f"rule_list must be a list of rule dicts, got {type(rule_list).__name__}"
+        )
+    for idx, rule in enumerate(rule_list):
+        if not isinstance(rule, dict):
+            raise RuleValidationError(
+                f"Rule {idx} must be a dict, got {type(rule).__name__}"
+            )
+        for required_key in ("conditions", "actions"):
+            if required_key not in rule:
+                raise RuleValidationError(
+                    f"Rule {idx} is missing required key '{required_key}'"
+                )
 
 
 def run_all(rule_list,
@@ -24,6 +65,8 @@ def run_all(rule_list,
     Returns:
         bool: True if any rule was triggered
     """
+    validate_rules(rule_list)
+
     if debug:
         logs.enable_debug(True)
 
@@ -78,23 +121,30 @@ def check_conditions_recursively(conditions, defined_variables):
     match list(conditions.keys()):
         case ["not"]:
             inner_result = check_conditions_recursively(conditions["not"], defined_variables)
-            result = ~inner_result
-            logs.log_condition_group('not', bool(result))
+            # Use bitwise ~ for pandas Series (element-wise), logical not for
+            # scalars (~True == -2, which is truthy and would be wrong here).
+            if isinstance(inner_result, pd.Series):
+                result = ~inner_result
+            else:
+                result = not inner_result
+            logs.log_condition_group('not', _coerce_bool(result))
             return result
 
         case ["all"]:
             result = True
-            assert len(conditions['all']) >= 1
+            if len(conditions['all']) < 1:
+                raise RuleValidationError("'all' block must contain at least one condition")
             # Always check all conditions in the case that we are operating on a dataframe
             for condition in conditions['all']:
                 check_result = check_conditions_recursively(condition, defined_variables)
                 result = result & check_result
-            logs.log_condition_group('all', bool(result))
+            logs.log_condition_group('all', _coerce_bool(result))
             return result
 
         case ["any"]:
             result = False
-            assert len(conditions['any']) >= 1
+            if len(conditions['any']) < 1:
+                raise RuleValidationError("'any' block must contain at least one condition")
             missing_variables = []
             for condition in conditions['any']:
                 # Always check all conditions in the case that we are operating on a dataframe
@@ -106,13 +156,16 @@ def check_conditions_recursively(conditions, defined_variables):
             if len(missing_variables) == len(conditions["any"]):
                 # Raise a key error only if all conditions in an "any" condition result in a KeyError
                 raise KeyError(", ".join(list(set(missing_variables))))
-            logs.log_condition_group('any', bool(result))
+            logs.log_condition_group('any', _coerce_bool(result))
             return result
 
         case keys:
             # help prevent errors - any and all can only be in the condition dict
             # if they're the only item
-            assert not ('any' in keys or 'all' in keys)
+            if 'any' in keys or 'all' in keys:
+                raise RuleValidationError(
+                    "'any'/'all' must be the only key in a condition group"
+                )
             return check_condition(conditions, defined_variables)
 
 def check_condition(condition, defined_variables):
@@ -124,7 +177,7 @@ def check_condition(condition, defined_variables):
     params = condition.get("params")
     operator_type = _get_variable_value(defined_variables, field, params)
     result = _do_operator_comparison(operator_type, op, value)
-    logs.log_condition_result(field, op, value, bool(result))
+    logs.log_condition_result(field, op, value, _coerce_bool(result))
     return result
 
 def _get_variable_value(defined_variables, name, params=None):
@@ -136,7 +189,7 @@ def _get_variable_value(defined_variables, name, params=None):
     """
     method = getattr(defined_variables, name, _MISSING)
     if method is _MISSING:
-        raise AssertionError(
+        raise MissingVariableError(
             f"Variable {name} is not defined in class {defined_variables.__class__.__name__}"
         )
     val = method(params) if params else method()
@@ -152,7 +205,7 @@ def _do_operator_comparison(operator_type, operator_name, comparison_value):
     """
     method = getattr(operator_type, operator_name, _MISSING)
     if method is _MISSING:
-        raise AssertionError(
+        raise UndefinedOperatorError(
             f"Operator {operator_name} does not exist for type {operator_type.__class__.__name__}"
         )
     if getattr(method, 'input_type', '') == FIELD_NO_INPUT:
@@ -162,12 +215,22 @@ def _do_operator_comparison(operator_type, operator_name, comparison_value):
 
 def do_actions(actions, defined_actions, results=None):
     for action in actions:
-        method_name = action['action']
-        params = action['params']
+        # Normalize internally so callers can pass dict, list/tuple, or string
+        # action formats without pre-processing (fulfils the documented contract).
+        normalized = normalize_action(action)
+        method_name = normalized['action']
+        params = normalized.get('params') or {}
         method = getattr(defined_actions, method_name, _MISSING)
         if method is _MISSING:
-            raise AssertionError(
+            raise UndefinedActionError(
                 f"Action {method_name} is not defined in class {defined_actions.__class__.__name__}"
+            )
+        # Only allow methods explicitly registered with @rule_action to be
+        # invoked from rule data, so arbitrary methods can't be called.
+        if not getattr(method, 'is_rule_action', False):
+            raise UndefinedActionError(
+                f"Action {method_name} is not a registered rule action on "
+                f"{defined_actions.__class__.__name__} (decorate it with @rule_action)"
             )
         logs.log_action_execution(method_name, params if params else None)
         method(**params, results=results)
