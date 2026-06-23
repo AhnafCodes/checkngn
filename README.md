@@ -281,6 +281,42 @@ Or enable globally:
 from checkngn import enable_debug
 enable_debug(True)
 ```
+## Error Handling
+
+The engine validates rules before and during evaluation and raises a dedicated
+exception hierarchy so you can catch configuration problems deliberately
+(instead of relying on `AssertionError`/`KeyError`). All errors inherit from
+`RuleEngineError`:
+
+| Exception | Raised when |
+|-----------|-------------|
+| `RuleEngineError` | Base class — catch this to handle any engine error. |
+| `RuleValidationError` | A rule, variable, or action **definition** is malformed: a rule missing its `conditions`/`actions` key, an empty `all`/`any` block, `any`/`all` mixed with other keys in a group, an unknown action parameter or field type, or an invalid variable `field_type`. |
+| `MissingVariableError` | A condition references a `field` not defined on the variables class. |
+| `UndefinedOperatorError` | A condition references an `operator` that does not exist for the variable's type. |
+| `UndefinedActionError` | An action name is not defined on the actions class, **or** the named method exists but is not decorated with `@rule_action`. |
+
+```python
+from checkngn import run_all, RuleValidationError, RuleEngineError
+
+try:
+    run_all(rules, ProductVariables(product), ProductActions(product))
+except RuleValidationError as e:
+    # Malformed rule definition — surface to the rule author.
+    print(f"Invalid rule: {e}")
+except RuleEngineError as e:
+    # Any other engine error (missing variable/operator/action).
+    print(f"Rule engine error: {e}")
+```
+
+`run_all()` calls `validate_rules()` up front, so structurally malformed rules
+fail fast with a clear message rather than crashing deep inside evaluation.
+
+> **Security note:** only methods decorated with `@rule_action` can be invoked
+> from rule data. Referencing any other method on the actions class raises
+> `UndefinedActionError`, so untrusted rule definitions cannot call arbitrary
+> methods.
+
 ## Export Rule Schema
 
 Export available variables, operators, and actions for UI generation:
